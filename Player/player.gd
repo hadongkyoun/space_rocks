@@ -2,6 +2,8 @@ extends RigidBody2D
 
 @export var engine_power = 500
 @export var spin_power = 8000
+@export var bullet_scene : PackedScene
+@export var fire_rate = 0.25
 
 # For screen wrap
 var screensize = Vector2.ZERO
@@ -10,6 +12,8 @@ var screensize = Vector2.ZERO
 var thrust = Vector2.ZERO
 # Rotate direction of ship
 var rotation_dir = 0
+
+var can_shoot = true
 
 enum { INIT, ALIVE, INVULNERABLE, DEAD }
 var state = INIT
@@ -38,6 +42,19 @@ func get_input():
 	if Input.is_action_pressed("thrust"):
 		thrust = transform.x * engine_power
 	rotation_dir = Input.get_axis("rotate_left", "rotate_right")
+	# Shoot
+	if Input.is_action_pressed("shoot") and can_shoot:
+		shoot()
+
+func shoot():
+	if state == INVULNERABLE:
+		return
+	can_shoot = false
+	$GunCooldown.start()
+	var b = bullet_scene.instantiate()
+	get_tree().root.add_child(b)
+	# Give start position to bullet scene
+	b.start($Muzzle.global_transform)
 
 func change_state(new_state):
 	match new_state:
@@ -48,3 +65,6 @@ func change_state(new_state):
 			$CollisionShape2D.set_deferred("disabled", false)
 	state = new_state
 		
+
+func _on_gun_cooldown_timeout() -> void:
+	can_shoot = true
