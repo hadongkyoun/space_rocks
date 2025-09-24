@@ -1,14 +1,50 @@
 extends Node
 
 @export var rock_scene : PackedScene
-
+@export var enemy_scene : PackedScene
+var level = 0
+var score = 0
+var playing = false
 var screensize = Vector2.ZERO
+
 func _ready():
 	screensize = get_viewport().get_visible_rect().size
-	for i in 3:
-		# 3 size of rocks
-		spawn_rock(3)
+
+func _process(delta: float) -> void:
+	if not playing:
+		return
+	if get_tree().get_nodes_in_group("rocks").size() == 0:
+		new_level()
+
+func _input(event):
+	if event.is_action_pressed("pause"):
+		if not playing:
+			return
+		get_tree().paused = not get_tree().paused
+		var message = $HUD/VBoxContainer/Message
+		if get_tree().pause:
+			message.text = "Paused"
+			message.show()
+		else:
+			message.text = ""
+			message.hide()
 		
+func new_game():
+	# Destroy remain rocks in last game
+	get_tree().call_group("rocks", "queue_free")
+	level = 0
+	score = 0
+	$HUD.update_score(score)
+	$HUD.show_message("Get Ready!")
+	$Player.reset()
+	await $HUD/Timer.timeout
+	playing = true
+	$Music.play()
+
+func game_over():
+	playing = false
+	$HUD.game_over()
+	$Music.stop()
 func spawn_rock(size, pos = null, vel = null):
 	if pos == null:
 		$RockPath/RockSpawn.progress = randi()
@@ -22,6 +58,9 @@ func spawn_rock(size, pos = null, vel = null):
 	r.exploded.connect(self._on_rock_exploded)
 	
 func _on_rock_exploded(size, radius, pos, vel):
+	score += 10 * size
+	$HUD.update_score(score)
+	$ExplosionSound.play()
 	if size <= 1:
 		return
 	for offset in [-1,1]:
@@ -29,3 +68,18 @@ func _on_rock_exploded(size, radius, pos, vel):
 		var newpos = pos + dir * radius
 		var newvel = dir * vel.length() * 1.1
 		spawn_rock(size - 1, newpos, newvel)
+	
+
+func new_level():
+	$EnemyTimer.start(randf_range(5, 10))
+	level += 1
+	$HUD.show_message("Wave %s" %level)
+	for i in level:
+		spawn_rock(3)
+	$LevelupSound.play()
+
+func _on_enemy_timer_timeout() -> void:
+	var e = enemy_scene.instantiate()
+	add_child(e)
+	e.target = $Player
+	$EnemyTimer.start(randf_range(20, 40))

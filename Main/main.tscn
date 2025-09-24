@@ -1,9 +1,14 @@
-[gd_scene load_steps=6 format=3 uid="uid://bmqmwdt8vhnes"]
+[gd_scene load_steps=11 format=3 uid="uid://bmqmwdt8vhnes"]
 
 [ext_resource type="Script" uid="uid://cgsgmqfnaup1j" path="res://main.gd" id="1_2w1kt"]
 [ext_resource type="PackedScene" uid="uid://c5nwowl7om17d" path="res://Rock/rock.tscn" id="2_eunhr"]
 [ext_resource type="PackedScene" uid="uid://coi2u17l80grq" path="res://Player/player.tscn" id="2_k3v36"]
 [ext_resource type="Texture2D" uid="uid://dneyi50b1uead" path="res://assets/space_background.png" id="2_qvhan"]
+[ext_resource type="PackedScene" uid="uid://vds210e87r4c" path="res://Enemy/enemy.tscn" id="3_liyct"]
+[ext_resource type="PackedScene" uid="uid://ovv5ry1qr31t" path="res://UI/hud.tscn" id="5_k3v36"]
+[ext_resource type="AudioStream" uid="uid://dqk3ch5ybrvad" path="res://assets/sounds/explosion.wav" id="7_rj11h"]
+[ext_resource type="AudioStream" uid="uid://btjrh56vrsbd1" path="res://assets/sounds/levelup.ogg" id="8_qac2q"]
+[ext_resource type="AudioStream" uid="uid://dqy6dw4a02fwt" path="res://assets/sounds/Funky-Gameplay_Looping.ogg" id="9_o60nc"]
 
 [sub_resource type="Curve2D" id="Curve2D_2w1kt"]
 _data = {
@@ -12,8 +17,10 @@ _data = {
 point_count = 5
 
 [node name="Main" type="Node"]
+process_mode = 3
 script = ExtResource("1_2w1kt")
 rock_scene = ExtResource("2_eunhr")
+enemy_scene = ExtResource("3_liyct")
 
 [node name="Background" type="Sprite2D" parent="."]
 texture = ExtResource("2_qvhan")
@@ -25,3 +32,23 @@ centered = false
 curve = SubResource("Curve2D_2w1kt")
 
 [node name="RockSpawn" type="PathFollow2D" parent="RockPath"]
+
+[node name="HUD" parent="." instance=ExtResource("5_k3v36")]
+
+[node name="EnemyTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="ExplosionSound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("7_rj11h")
+
+[node name="LevelupSound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("8_qac2q")
+
+[node name="Music" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("9_o60nc")
+
+[connection signal="dead" from="Player" to="." method="game_over"]
+[connection signal="lives_changed" from="Player" to="HUD" method="update_lives"]
+[connection signal="shield_changed" from="Player" to="HUD" method="update_shield"]
+[connection signal="start_game" from="HUD" to="." method="new_game"]
+[connection signal="timeout" from="EnemyTimer" to="." method="_on_enemy_timer_timeout"]

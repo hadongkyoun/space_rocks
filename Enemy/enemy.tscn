@@ -1,0 +1,105 @@
+[gd_scene load_steps=15 format=3 uid="uid://vds210e87r4c"]
+
+[ext_resource type="Script" uid="uid://wuq0v4s4dq6v" path="res://enemy.gd" id="1_eqilm"]
+[ext_resource type="PackedScene" uid="uid://qsm56a0sl8il" path="res://Bullet/enemy_bullet.tscn" id="2_m6jha"]
+[ext_resource type="Texture2D" uid="uid://bxncfxkpfm85" path="res://assets/enemy_saucer.png" id="2_ncf7h"]
+[ext_resource type="PackedScene" uid="uid://cic0h2eyysgle" path="res://Effect/explosion.tscn" id="3_m6jha"]
+[ext_resource type="PackedScene" uid="uid://ba0nk5x2yi7ym" path="res://Enemy/enemy_paths.tscn" id="4_glvfu"]
+[ext_resource type="AudioStream" uid="uid://dqk3ch5ybrvad" path="res://assets/sounds/explosion.wav" id="6_glvfu"]
+[ext_resource type="AudioStream" uid="uid://bfdqrkc0x08q4" path="res://assets/sounds/enemy_laser.wav" id="7_0rspp"]
+[ext_resource type="Texture2D" uid="uid://icmje0k37bou" path="res://assets/corona.png" id="8_0rspp"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_0rspp"]
+
+[sub_resource type="Animation" id="Animation_nmr1a"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_efk13"]
+resource_name = "flash"
+length = 0.25
+step = 0.1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0.01, 0.04, 0.08, 0.12, 0.16),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(1, 0, 0, 1), Color(1, 1, 1, 1), Color(1, 0, 0, 1), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_47ove"]
+_data = {
+&"RESET": SubResource("Animation_nmr1a"),
+&"flash": SubResource("Animation_efk13")
+}
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_efk13"]
+blend_mode = 1
+
+[sub_resource type="Curve" id="Curve_nmr1a"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.134832), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[node name="Enemy" type="Area2D"]
+script = ExtResource("1_eqilm")
+bullet_scene = ExtResource("2_m6jha")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+visible = false
+texture = ExtResource("2_ncf7h")
+hframes = 3
+
+[node name="Explosion" parent="." instance=ExtResource("3_m6jha")]
+visible = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+scale = Vector2(3.5, 3.5)
+shape = SubResource("CircleShape2D_0rspp")
+
+[node name="EnemyPaths" parent="." instance=ExtResource("4_glvfu")]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_47ove")
+}
+
+[node name="GunCooldown" type="Timer" parent="." groups=["enemies"]]
+wait_time = 4.0
+autostart = true
+
+[node name="ExplosionSound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("6_glvfu")
+
+[node name="ShootSound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("7_0rspp")
+
+[node name="Effect" type="CPUParticles2D" parent="."]
+show_behind_parent = true
+material = SubResource("CanvasItemMaterial_efk13")
+amount = 20
+texture = ExtResource("8_0rspp")
+emission_shape = 1
+emission_sphere_radius = 25.0
+gravity = Vector2(0, 0)
+scale_amount_min = 0.1
+scale_amount_max = 0.1
+scale_amount_curve = SubResource("Curve_nmr1a")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="timeout" from="GunCooldown" to="." method="_on_gun_cooldown_timeout"]
